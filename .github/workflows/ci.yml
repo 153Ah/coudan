@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.9', '3.12' ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 安装依赖
+        run: python -m pip install --upgrade pip -q && pip install -r requirements.txt -q
+
+      - name: 语法检查
+        run: python -m py_compile coudan.py
+
+      - name: 端到端冒烟测试
+        run: |
+          python - <<'PY'
+          from openpyxl import Workbook
+          wb = Workbook()
+          ws = wb.active
+          rows = [('商品A', 70.56, 98, 11), ('商品B', 18.00, 25, 8), ('商品C', 14.40, 20, 8)]
+          for i, (name, b, c, q) in enumerate(rows, 1):
+              ws.cell(i, 1, name); ws.cell(i, 2, b); ws.cell(i, 3, c); ws.cell(i, 4, q)
+          wb.save('sample.xlsx')
+          PY
+          python coudan.py sample.xlsx 300 out.xlsx 5
+          python - <<'PY'
+          from openpyxl import load_workbook
+          ws = load_workbook('out.xlsx').active
+          orders, total = set(), 0.0
+          for r in range(3, ws.max_row + 1):
+              if str(ws.cell(r, 2).value or '') == '订单合计':
+                  v = ws.cell(r, 5).value
+                  assert v >= 300, f'订单金额不足 300: {v}'
+                  total += v
+          assert total > 0, '未生成任何订单'
+          print(f'冒烟测试通过：订单合计 {total:.2f}')
+          PY
+
+      - name: 上传结果样例
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coudan-result-py${{ matrix.python-version }}
+          path: out.xlsx
