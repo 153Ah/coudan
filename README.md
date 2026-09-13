@@ -58,11 +58,13 @@ A small CLI tool that splits a product list into orders so that each order just 
 
 ## 效果截图 Screenshots
 
-工具生成的凑单结果示例：每单明细下方给出「订单合计」，内容相同的订单相邻排列，最后单独列出不足门槛的部分（红色标题区块）。
+**① 你的商品表**长这样（A 列商品名称、B 列单价、C 列数量）：
 
-![结果示例 1](docs/screenshot-1.png)
+![输入表示例](docs/input-example.png)
 
-![结果示例 2](docs/screenshot-2.png)
+**② 跑完之后**得到的结果表：每单明细下方是「订单合计」（保证 ≥ 300 元），内容相同的订单相邻排列，最下面红色区块是不足门槛、需要单独下单的部分：
+
+![结果表示例](docs/result-example.png)
 
 ---
 
